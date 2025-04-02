@@ -16,5 +16,5 @@ function verifyToken(req, res, next) {
         }
     }
 
-//18E export
+//18E export, go to controllers/users.js
 module.exports = verifyToken;
