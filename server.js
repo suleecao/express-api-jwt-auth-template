@@ -11,7 +11,7 @@ const testJwtRouter = require('./controllers/test-jwt');
 const authRouter = require('./controllers/auth');
 //19D require
 const usersRouter = require('./controllers/users');
-//23 put middleware here instead instead of route definitions
+//23 put middleware here instead as parent instead of route definitions  (child)
 const verifyToken = require('./middleware/verify-token');
 
 
