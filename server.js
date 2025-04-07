@@ -12,12 +12,12 @@ const authRouter = require('./controllers/auth');
 const testJwtRouter = require('./controllers/test-jwt');
 const usersRouter = require('./controllers/users');
 const cocktailsRouter = require('./controllers/cocktails')
-// // Connect to MongoDB
-// mongoose.connect(process.env.MONGODB_URI);
 
-// mongoose.connection.on('connected', () => {
-//   console.log(`Connected to MongoDB ${mongoose.connection.name}.`);
-// });
+mongoose.connect(process.env.MONGODB_URI);
+
+mongoose.connection.on('connected', () => {
+  console.log(`Connected to MongoDB ${mongoose.connection.name}.`);
+});
 
 // Middleware
 app.use(cors());
