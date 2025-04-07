@@ -19,6 +19,17 @@ router.get("/random", async(req,res) =>{
 	}
 
 })
+router.get("/glasses", async(req, res) =>{
+	const response = await fetch("https://www.thecocktaildb.com/api/json/v1/1/list.php?g=list");
+	const data = await response.json();
+	let glassesArr = []
+	data.drinks.forEach((glass) => glassesArr.push(glass.strGlass))
+	console.log(glassesArr)
+})
+const getIngredients = async() =>{
+	
+}
+
 router.get('/:cocktailName', async (req, res) => {
   try {
     const response = await fetch('https://www.thecocktaildb.com/api/json/v1/1/search.php?s='+req.params.cocktailName);
