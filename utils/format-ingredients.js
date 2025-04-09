@@ -1,14 +1,15 @@
-function formatIngredients(drink) {
-  const ingredients = {};
+function formatIngredients(cocktail) {
+  const ingredients = [];
 
-  for (let i = 1; i <= 15; i++) {
-    const ingredient = drink[`strIngredient${i}`];
-    const measure = drink[`strMeasure${i}`];
-
-    if (ingredient) {
-      ingredients[ingredient] = measure ? measure.trim() : '';
-    }
-  }
+  cocktail.ingredients.forEach(item => {
+  
+    const ingredientName = item.ingredient.ingredient; 
+    const ingredientAmount = item.amount.trim();
+    
+    const formattedIngredient = ingredientAmount ? `${ingredientAmount} ${ingredientName}` : ingredientName;
+    
+    ingredients.push(formattedIngredient);
+  });
 
   return ingredients;
 }
