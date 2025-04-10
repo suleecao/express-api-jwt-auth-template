@@ -3,6 +3,7 @@ const router = express.Router();
 const {Cocktail, Ingredient } = require('../models/cocktail')
 const mongoose = require("mongoose")
 const formatIngredients = require("../utils/format-ingredients");
+const verifyToken = require("../middleware/verify-token");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -12,7 +13,17 @@ router.get("/", async (req, res) => {
   res.json({ message: "hi" });
 });
 
-router.get("/random", async(req,res) =>{
+router.get("/random", async (req, res) => {
+  try {
+    const randomCocktails = await Cocktail.aggregate([{ $sample: { size: 10 } }]);
+    res.json(randomCocktails);
+  } catch (error) {
+    console.error("Error fetching random cocktails:", error.message);
+    res.status(500).json({ error: "Failed to fetch random cocktails" });
+  }
+});
+
+router.get("/api/random", async(req,res) =>{
   try{
     const response = await fetch(`https://www.thecocktaildb.com/api/json/v2/${API_KEY}/random.php`);
     const data = await response.json();
@@ -32,7 +43,28 @@ router.get("/random", async(req,res) =>{
 
 });
 
-router.get("/popular", async (req, res) => {
+router.get("/api/:cocktailId", async(req,res) =>{
+  try{
+    const response = await fetch(`https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${req.params.cocktailId}`)
+    const data = await response.json();
+    const drinks = data.drinks.map((drink) => {
+      return {
+        name: drink.strDrink,
+        id: drink.idDrink,
+        instructions: drink.strInstructions,
+        image: drink.strDrinkThumb,
+        ingredients: formatIngredients(drink),
+      };
+    });
+
+    res.json(drinks);
+  }catch(error){
+    console.error(error);
+  }
+});
+
+
+router.get("/api/popular", async (req, res) => {
   try {
     const url = `https://www.thecocktaildb.com/api/json/v2/${API_KEY}/popular.php`;
 
@@ -64,21 +96,36 @@ router.get("/popular", async (req, res) => {
   }
 });
 
-router.get("/latest", async (req, res) => {
+router.get("/api/latest", async (req, res) => {
   try {
-    const url = `https://www.thecocktaildb.com/api/json/v2/${API_KEY}/latest.php`;
-
-    console.log("Fetching URL:", url);
-
-    const response = await fetch(url);
-    console.log("Response status:", response.status);
+    const response = await fetch(`https://www.thecocktaildb.com/api/json/v2/${API_KEY}/latest.php`);
+    const text = await response.text(); 
+    console.log("Raw Response Text:", text); 
 
     if (!response.ok) {
       throw new Error(`API responded with status ${response.status}`);
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = JSON.parse(text);  
+    } catch (parseError) {
+      console.error("Error parsing JSON:", parseError);
+      return res.status(500).json({ error: "Failed to parse JSON" });
+    }
+
+
+    if (!data.drinks) {
+      console.error("No drinks found in the response");
+      return res.status(404).json({ message: "No drinks found" });
+    }
+
+    console.log("First Drink:", data.drinks[0]);
+
     const drinks = data.drinks.map((drink) => {
+     
+      console.log("Drink Object:", drink);
+
       return {
         name: drink.strDrink,
         id: drink.idDrink,
@@ -93,6 +140,26 @@ router.get("/latest", async (req, res) => {
   } catch (error) {
     console.error("Error fetching cocktail data:", error.message);
     res.status(500).json({ error: "Failed to fetch cocktail data" });
+  }
+});
+
+router.get("/api/search/:searchQuery", async(req,res) =>{
+  try{
+    const response = await fetch(`https://www.thecocktaildb.com/api/json/v1/1/search.php?s=${req.params.searchQuery}`)
+    const data = await response.json();
+    const drinks = data.drinks.map((drink) => {
+      return {
+        name: drink.strDrink,
+        id: drink.idDrink,
+        instructions: drink.strInstructions,
+        image: drink.strDrinkThumb,
+        ingredients: formatIngredients(drink),
+      };
+    });
+
+    res.json(drinks);
+  }catch(error){
+    console.error(error);
   }
 });
 
@@ -118,7 +185,8 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: "Server error while adding cocktail" });
   }
 });
-router.put("/:cocktailId", async (req, res) => {
+
+router.put("/:cocktailId", verifyToken, async (req, res) => {
   try {
     const { cocktailId } = req.params;
     const { name, directions, ingredients, glass } = req.body;
@@ -127,37 +195,43 @@ router.put("/:cocktailId", async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const updatedCocktail = await Cocktail.findByIdAndUpdate(
-      cocktailId,
-      { drinkName: name, instructions: directions, ingredients, glass },
-      { new: true }
-    );
+    const cocktail = await Cocktail.findById(cocktailId);
+    if (!cocktail) return res.status(404).json({ message: "Cocktail not found" });
 
-    if (!updatedCocktail) {
-      return res.status(404).json({ message: "Cocktail not found" });
+    if (cocktail.creator.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Forbidden: You are not the father" });
     }
 
-    res.json({ message: "Cocktail updated successfully", cocktail: updatedCocktail });
+    cocktail.drinkName = name;
+    cocktail.instructions = directions;
+    cocktail.ingredients = ingredients;
+    cocktail.glass = glass;
+
+    await cocktail.save();
+
+    res.json({ message: "Cocktail updated successfully", cocktail });
   } catch (error) {
     console.error("Error updating cocktail:", error);
     res.status(500).json({ message: "Server error while updating cocktail" });
   }
 });
-router.delete("/:cocktailId", async (req, res) => {
+
+router.delete("/:cocktailId", verifyToken, async (req, res) => {
   try {
     const { cocktailId } = req.params;
 
-    const deletedCocktail = await Cocktail.findByIdAndDelete(cocktailId);
+    const cocktail = await Cocktail.findById(cocktailId);
+    if (!cocktail) return res.status(404).json({ message: "Cocktail not found" });
 
-    if (!deletedCocktail) {
-      return res.status(404).json({ message: "Cocktail not found" });
+    if (cocktail.creator.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Forbidden: You are not the father" });
     }
 
+    await Cocktail.findByIdAndDelete(cocktailId);
     res.json({ message: "Cocktail deleted successfully" });
   } catch (error) {
     console.error("Error deleting cocktail:", error);
     res.status(500).json({ message: "Server error while deleting cocktail" });
   }
 });
-
 module.exports = router;
