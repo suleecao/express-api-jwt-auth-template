@@ -43,14 +43,19 @@ router.get('/:userId/favorites', verifyToken, async(req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
-
 router.post('/:userId/favorites/', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    if (!user.favorites.includes(req.params.cocktailId)) {
-      user.favorites.push(req.params.cocktailId);
+    const { cocktailId } = req.body;
+
+    if (!cocktailId) {
+      return res.status(400).json({ error: 'cocktailId is required in the body' });
+    }
+
+    if (!user.favorites.includes(cocktailId)) {
+      user.favorites.push(cocktailId);
       await user.save();
     }
 
@@ -61,11 +66,17 @@ router.post('/:userId/favorites/', verifyToken, async (req, res) => {
   }
 });
 
-router.delete('/:userId/favorites/:cocktailId',verifyToken, async (req, res) => {
+router.delete('/:userId/favorites', verifyToken, async (req, res) => {
   try {
+    const { cocktailId } = req.body;
+
+    if (!cocktailId) {
+      return res.status(400).json({ error: 'cocktailId is required in the body' });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.params.userId,
-      { $pull: { favorites: req.params.cocktailId } },
+      { $pull: { favorites: cocktailId } },
       { new: true }
     );
 
@@ -77,6 +88,5 @@ router.delete('/:userId/favorites/:cocktailId',verifyToken, async (req, res) => 
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 module.exports = router;
