@@ -99,7 +99,7 @@ router.get("/api/popular", async (req, res) => {
 router.get("/api/latest", async (req, res) => {
   try {
     const response = await fetch(`https://www.thecocktaildb.com/api/json/v2/${API_KEY}/latest.php`);
-    const text = await response.text(); 
+    const text = await response.json;
     console.log("Raw Response Text:", text); 
 
     if (!response.ok) {
@@ -163,18 +163,19 @@ router.get("/api/search/:searchQuery", async(req,res) =>{
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", verifyToken, async (req, res) => {
   try {
-    const { name, directions, ingredients } = req.body;
-
-    if (!name || !directions || !Array.isArray(ingredients)) {
+    const { drinkName, instructions, ingredients, glass } = req.body;
+    if (!drinkName || !instructions || !Array.isArray(ingredients)) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
     const newCocktail = new Cocktail({
-      name,
+      drinkName,
       instructions,
       ingredients, 
+      glass,
+      creator: req.user.id
     });
 
     await newCocktail.save();
@@ -185,13 +186,30 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: "Server error while adding cocktail" });
   }
 });
+router.get("/:cocktailId", async (req, res) => {
+  try {
+    const { cocktailId } = req.params;
 
+    const cocktail = await Cocktail.findById(cocktailId)
+      .populate('ingredients') 
+      .populate('creator', 'username');
+
+    if (!cocktail) {
+      return res.status(404).json({ message: "Cocktail not found" });
+    }
+
+    res.status(200).json(cocktail);
+  } catch (error) {
+    console.error("Error fetching cocktail:", error);
+    res.status(500).json({ message: "Server error while fetching cocktail" });
+  }
+});
 router.put("/:cocktailId", verifyToken, async (req, res) => {
   try {
     const { cocktailId } = req.params;
-    const { name, directions, ingredients, glass } = req.body;
+    const { drinkName, directions, ingredients, glass } = req.body;
 
-    if (!name || !directions || !Array.isArray(ingredients) || !glass) {
+    if (!drinkName || !directions || !Array.isArray(ingredients) || !glass) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -202,7 +220,7 @@ router.put("/:cocktailId", verifyToken, async (req, res) => {
       return res.status(403).json({ message: "Forbidden: You are not the father" });
     }
 
-    cocktail.drinkName = name;
+    cocktail.drinkName = drinkName;
     cocktail.instructions = directions;
     cocktail.ingredients = ingredients;
     cocktail.glass = glass;
@@ -234,4 +252,15 @@ router.delete("/:cocktailId", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Server error while deleting cocktail" });
   }
 });
+
+// router.get('/:userId', async(req, res) => {
+//   try{
+//     const {userId} = req.params;
+
+//     const cocktails
+//   }catch(error){
+//     console.error("error fetching user cocktails: ", error)
+//     res.status(500).json({message: "Server Error while fetching user created cocktails."})
+//   }
+// })
 module.exports = router;
