@@ -32,6 +32,7 @@ app.use("/cocktails", cocktailsRouter);
 app.use("/reviews", reviewsRouter)
 
 // Start the server and listen on port 3000
+
 app.listen(3000, () => {
   console.log('The express app is ready!');
 });

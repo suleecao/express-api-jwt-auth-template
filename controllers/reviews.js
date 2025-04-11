@@ -6,15 +6,21 @@ const verifyToken = require("../middleware/verify-token");
 
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { cocktailId, comment, rating } = req.body;
-    console.log(req.user)
-    if (!cocktailId || typeof rating !== 'number') {
+   
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    const { cocktail, comment, rating } = req.body;
+    const author = req.user.id; 
+
+    if (!cocktail || typeof rating !== 'number') {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
     const newReview = await Review.create({
-      cocktail: cocktailId,
-      author: req.user,
+      cocktail,
+      author,
       comment,
       rating
     });
