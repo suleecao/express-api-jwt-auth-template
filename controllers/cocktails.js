@@ -179,8 +179,8 @@ router.post("/", verifyToken, async (req, res) => {
     });
 
     await newCocktail.save();
-
-    res.status(201).json({ message: "Cocktail added successfully", cocktail: newCocktail });
+    console.log("Form submission result:", newCocktail);
+    res.status(201).json(newCocktail);
   } catch (error) {
     console.error("Error adding cocktail:", error);
     res.status(500).json({ message: "Server error while adding cocktail" });
@@ -190,8 +190,12 @@ router.get("/:cocktailId", async (req, res) => {
   try {
     const { cocktailId } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(cocktailId)) {
+      return res.status(400).json({ message: "Invalid cocktail ID" });
+    }
+
     const cocktail = await Cocktail.findById(cocktailId)
-      .populate('ingredients') 
+      .populate('ingredients')
       .populate('creator', 'username');
 
     if (!cocktail) {
