@@ -2,7 +2,6 @@ const express = require('express');
 const { Ingredient }= require('../models/cocktail'); 
 const router = express.Router();
 
-// GET all ingredients
 router.get('/', async (req, res) => {
   try {
     const ingredients = await Ingredient.find();
@@ -13,7 +12,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET ingredient by ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {

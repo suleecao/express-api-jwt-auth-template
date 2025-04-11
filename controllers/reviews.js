@@ -33,7 +33,6 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(500).json({ message: "Server error while creating review" });
   }
 });
-// GET a single review
 router.get('/:reviewId', async (req, res) => {
   try {
     const { reviewId } = req.params;
@@ -50,7 +49,6 @@ router.get('/:reviewId', async (req, res) => {
   }
 });
 
-// PUT to update a review (must be the author)
 router.put('/:reviewId', verifyToken, async (req, res) => {
   try {
     const { reviewId } = req.params;
@@ -81,7 +79,6 @@ router.put('/:reviewId', verifyToken, async (req, res) => {
   }
 });
 
-// DELETE a review (must be the author)
 router.delete('/:reviewId', verifyToken, async (req, res) => {
   try {
     const { reviewId } = req.params;
