@@ -6,27 +6,25 @@ const verifyToken = require("../middleware/verify-token");
 
 router.post('/', verifyToken, async (req, res) => {
   try {
-   
+    console.log('req.user:', req.user);
+
     if (!req.user) {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
     const { cocktail, comment, rating } = req.body;
-    const author = req.user.id; 
+    const author = req.user._id;
     const parsedRating = Number(rating);
+
     if (!cocktail || isNaN(parsedRating)) {
       return res.status(400).json({ message: "Missing required fields" });
     }
-    if (parsedRating < 1 || parsedRating > 5) {
-      return res.status(400).json({ message: "Rating must be between 1 and 5" });
-    }
-
 
     const newReview = await Review.create({
       cocktail,
       author,
       comment,
-      rating: parsedRating
+      rating: parsedRating,
     });
 
     res.status(201).json({ message: "Review created", review: newReview });
@@ -35,7 +33,6 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(500).json({ message: "Server error while creating review" });
   }
 });
-
 // GET a single review
 router.get('/:reviewId', async (req, res) => {
   try {
@@ -68,7 +65,7 @@ router.put('/:reviewId', verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Review not found" });
     }
 
-    if (review.author.toString() !== req.user.id) {
+    if (review.author.toString() !== req.user._id) {
       return res.status(403).json({ message: "Forbidden: You are not the father" });
     }
 
@@ -94,7 +91,7 @@ router.delete('/:reviewId', verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Review not found" });
     }
 
-    if (review.author.toString() !== req.user.id) {
+    if (review.author.toString() !== req.user._id) {
       return res.status(403).json({ message: "Forbidden: You are not the father" });
     }
 
