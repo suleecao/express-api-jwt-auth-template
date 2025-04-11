@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const User = require('../models/user');
-const Cocktail = require("../models/cocktail");
+const {Cocktail, Ingredient } = require("../models/cocktail");
 
 const verifyToken = require("../middleware/verify-token");
 router.get('/', async (req, res) => {
@@ -88,5 +88,19 @@ router.delete('/:userId/favorites', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+router.get('/:userId/cocktails', async (req, res) => {
+  try {
+    const { userId } = req.params;
 
+    console.log("Fetching cocktails for user ID:", userId);
+
+    const cocktails = await Cocktail.find({ creator: userId }).populate('ingredients.ingredient');
+
+    res.status(200).json({ cocktails });
+  } catch (error) {
+    console.error("Error fetching user cocktails: ", error.message);
+    console.error(error.stack);
+    res.status(500).json({ message: "Server error while fetching your cocktails." });
+  }
+});
 module.exports = router;
