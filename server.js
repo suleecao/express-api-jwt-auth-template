@@ -13,6 +13,7 @@ const testJwtRouter = require('./controllers/test-jwt');
 const usersRouter = require('./controllers/users');
 const cocktailsRouter = require('./controllers/cocktails');
 const reviewsRouter = require("./controllers/reviews");
+const ingredientRoutes = require("./controllers/ingredients")
 mongoose.connect(process.env.MONGODB_URI);
 
 mongoose.connection.on('connected', () => {
@@ -30,7 +31,7 @@ app.use('/test-jwt', testJwtRouter);
 app.use('/users', usersRouter);
 app.use("/cocktails", cocktailsRouter);
 app.use("/reviews", reviewsRouter)
-
+app.use('/ingredients', ingredientRoutes)
 // Start the server and listen on port 3000
 
 app.listen(3000, () => {
