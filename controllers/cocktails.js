@@ -175,7 +175,7 @@ router.post("/", verifyToken, async (req, res) => {
       instructions,
       ingredients, 
       glass,
-      creator: req.user.id
+      creator: req.user._id
     });
 
     await newCocktail.save();
