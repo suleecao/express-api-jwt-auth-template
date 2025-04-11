@@ -13,16 +13,20 @@ router.post('/', verifyToken, async (req, res) => {
 
     const { cocktail, comment, rating } = req.body;
     const author = req.user.id; 
-
-    if (!cocktail || typeof rating !== 'number') {
+    const parsedRating = Number(rating);
+    if (!cocktail || isNaN(parsedRating)) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+    if (parsedRating < 1 || parsedRating > 5) {
+      return res.status(400).json({ message: "Rating must be between 1 and 5" });
+    }
+
 
     const newReview = await Review.create({
       cocktail,
       author,
       comment,
-      rating
+      rating: parsedRating
     });
 
     res.status(201).json({ message: "Review created", review: newReview });
